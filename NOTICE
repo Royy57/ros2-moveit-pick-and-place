@@ -1,5 +1,0 @@
-This repository is licensed under the MIT License (see LICENSE), except for
-third-party code that keeps its original license:
-
-- src/pnp_cobot_ros2/: BSD-3-Clause. Each package there has its own LICENSE
-  file, and the copyright notices in its source files must be retained.
