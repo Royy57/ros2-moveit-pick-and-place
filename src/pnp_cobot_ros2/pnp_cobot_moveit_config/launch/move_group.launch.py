@@ -7,6 +7,7 @@ for controlling a PnP Cobot robotic arm using MoveIt 2. It loads configuration f
 starts the move_group node, and optionally launches RViz for visualization.
 
 :author: Addison Sears-Collins
+:modified by: Souvik Roy <sroyy57@gmail.com> (2026) — ported to ROS 2 Humble / Gazebo Fortress
 :date: December 13, 2024
 """
 

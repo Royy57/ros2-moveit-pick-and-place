@@ -33,7 +33,7 @@ sudo apt install \
 
 Build:
 ```bash
-cd ~/pick_n_place_cobot
+cd ~/ros2-moveit-pick-and-place   # the cloned repo is the colcon workspace
 colcon build --symlink-install
 source install/setup.bash
 ```

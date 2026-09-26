@@ -7,6 +7,7 @@ framework with perception capabilities. It sets up the necessary configurations 
 trajectory execution, motion planning, and robot control specifically for the PnP Cobot platform.
 
 :author: Addison Sears-Collins
+:modified by: Souvik Roy <sroyy57@gmail.com> (2026) — ported to ROS 2 Humble / Gazebo Fortress
 :date: December 19, 2024
 """
 

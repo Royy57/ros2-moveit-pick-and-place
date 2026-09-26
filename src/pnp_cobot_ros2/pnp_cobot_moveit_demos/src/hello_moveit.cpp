@@ -7,6 +7,7 @@
  * plans a trajectory, and executes the planned motion.
  *
  * @author Addison Sears-Collins
+ * Modified by: Souvik Roy <sroyy57@gmail.com> (2026) — ported to ROS 2 Humble / Gazebo Fortress
  * @date December 15, 2024
  */
 

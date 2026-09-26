@@ -7,6 +7,7 @@
  * It uses the PCL library for point cloud processing and implements a region growing algorithm.
  *
  * @author Addison Sears-Collins
+ * Modified by: Souvik Roy <sroyy57@gmail.com> (2026) — ported to ROS 2 Humble / Gazebo Fortress
  * @date December 20, 2024
  */
 

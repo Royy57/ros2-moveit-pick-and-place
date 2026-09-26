@@ -1,4 +1,4 @@
-# Pick-Place-Cobot
+# ros2-moveit-pick-and-place
 ![Ubuntu 22.04](https://img.shields.io/badge/Ubuntu-22.04%20Jammy-E95420?logo=ubuntu&logoColor=white)
 ![ROS 2 Humble](https://img.shields.io/badge/ROS%202-Humble-22314E?logo=ros&logoColor=white)
 ![Gazebo Fortress](https://img.shields.io/badge/Gazebo-Fortress-F58113)
@@ -55,7 +55,9 @@ Measured in simulation on this repository's default demo:
 
 ## Quick start
 ```bash
-cd ~/pick_n_place_cobot
+sudo apt install git-lfs          # meshes and images are stored with Git LFS
+git clone https://github.com/Royy57/ros2-moveit-pick-and-place.git ~/ros2-moveit-pick-and-place
+cd ~/ros2-moveit-pick-and-place
 colcon build --symlink-install && source install/setup.bash
 bash src/pnp_cobot_ros2/pnp_cobot_mtc_pick_place_demo/scripts/robot.sh
 ```
@@ -65,7 +67,7 @@ Dependencies, the package overview, run options and what to expect are in
 
 ## Repository layout
 ```
-pick_n_place_cobot/
+ros2-moveit-pick-and-place/
 ├── docs/media/            README images and GIF
 └── src/pnp_cobot_ros2/    ROS 2 packages (description, Gazebo, MoveIt config, perception + MTC)
 ```

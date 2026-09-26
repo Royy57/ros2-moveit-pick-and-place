@@ -11,6 +11,7 @@
  * point cloud data, and RGB image data.
  *
  * @author Addison Sears-Collins
+ * Modified by: Souvik Roy <sroyy57@gmail.com> (2026) — ported to ROS 2 Humble / Gazebo Fortress
  * @date December 20, 2024
  */
 

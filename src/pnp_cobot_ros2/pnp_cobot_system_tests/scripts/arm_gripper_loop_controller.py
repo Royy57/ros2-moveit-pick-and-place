@@ -13,6 +13,7 @@ Action Clients:
         Commands for opening and closing the gripper
 
 :author: Addison Sears-Collins
+:modified by: Souvik Roy <sroyy57@gmail.com> (2026) — ported to ROS 2 Humble / Gazebo Fortress
 :date: November 15, 2024
 """
 

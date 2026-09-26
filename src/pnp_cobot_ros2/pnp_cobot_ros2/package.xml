@@ -4,7 +4,7 @@
   <name>pnp_cobot_ros2</name>
   <version>0.0.0</version>
   <description>Metapackage for the PnP Cobot pick-and-place simulation packages.</description>
-  <maintainer email="automaticaddison@todo.todo">ubuntu</maintainer>
+  <maintainer email="sroyy57@gmail.com">Souvik Roy</maintainer>
   <license>BSD-3-Clause</license>
   <buildtool_depend>ament_cmake</buildtool_depend>
 

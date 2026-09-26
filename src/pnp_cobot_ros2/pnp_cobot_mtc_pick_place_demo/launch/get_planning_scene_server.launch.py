@@ -15,6 +15,7 @@ Configuration:
     in the pnp_cobot_mtc_pick_place_demo package.
 
 :author: Addison Sears-Collins
+:modified by: Souvik Roy <sroyy57@gmail.com> (2026) — ported to ROS 2 Humble / Gazebo Fortress
 :date: December 19, 2024
 """
 

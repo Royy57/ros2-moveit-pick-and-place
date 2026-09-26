@@ -16,6 +16,7 @@ Launch Sequence:
     3. Gripper Action Controller (starts after Arm Controller)
 
 :author: Addison Sears-Collins
+:modified by: Souvik Roy <sroyy57@gmail.com> (2026) — ported to ROS 2 Humble / Gazebo Fortress
 :date: November 15, 2024
 """
 

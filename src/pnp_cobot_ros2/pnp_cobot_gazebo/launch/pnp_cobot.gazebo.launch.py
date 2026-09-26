@@ -6,6 +6,7 @@ This launch file sets up a complete ROS 2 simulation environment with Gazebo for
 a PnP Cobot robot.
 
 :author: Addison Sears-Collins
+:modified by: Souvik Roy <sroyy57@gmail.com> (2026) — ported to ROS 2 Humble / Gazebo Fortress
 :date: November 16, 2024
 """
 

@@ -7,6 +7,7 @@ MoveIt Task Constructor demos. It uses the same configuration structure as the m
 launch file to ensure compatibility.
 
 :author: Addison Sears-Collins
+:modified by: Souvik Roy <sroyy57@gmail.com> (2026) — ported to ROS 2 Humble / Gazebo Fortress
 :date: December 18, 2024
 """
 

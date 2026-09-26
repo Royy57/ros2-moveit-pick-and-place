@@ -18,6 +18,7 @@ Nodes:
     - /rviz2 (rviz2): Visualization tool for viewing the point cloud
 
 :author: Addison Sears-Collins
+:modified by: Souvik Roy <sroyy57@gmail.com> (2026) — ported to ROS 2 Humble / Gazebo Fortress
 :date: December 19, 2024
 """
 import os
