@@ -1,30 +1,6 @@
 # pnp_cobot_ros2
-![OS](https://img.shields.io/ubuntu/v/ubuntu-wallpapers/jammy)
-![ROS_2](https://img.shields.io/ros/v/humble/rclcpp)
-
-Perception-driven pick and place for a 6-axis desktop cobot, in simulation, with ROS 2 Humble,
-MoveIt 2, the MoveIt Task Constructor (MTC) and Gazebo Fortress.
-
-A simulated RGB-D camera looks at a table. The perception node segments the table and the objects
-on it from the point cloud, fits them to primitive shapes and adds them to the MoveIt planning
-scene. MTC then plans and executes a full pick and place of the target cylinder: open the
-gripper, approach, grasp, lift, move, place, release, retreat and return home.
-
-The arm model (URDF and meshes) is based on the Elephant Robotics myCobot 280.
-
-![PnP Cobot in RViz](./pnp_cobot_description/urdf/pnp_cobot_280_rviz.png)
-
-## Features
-- Gazebo Fortress simulation with `ros2_control` (`gz_ros2_control`) arm and gripper controllers
-- Simulated RGB-D camera publishing a colored point cloud
-- Point-cloud perception with PCL:
-  - Support plane (table) segmentation with RANSAC
-  - Euclidean clustering of the objects on the table
-  - Cylinder and box fitting (RANSAC, Hough transform)
-  - Automatic planning scene generation from the detected objects
-- Pick and place with the MoveIt Task Constructor, planned with OMPL, joint interpolation and Cartesian planners
-- RViz visualization of the planning scene and MTC solutions
-- Runs on CPU; no GPU required
+ROS 2 Humble packages for the PnP Cobot perception-based pick and place simulation. For the
+project overview, see the [main README](../../README.md).
 
 ## Packages
 | Package | Contents |
@@ -40,12 +16,8 @@ The arm model (URDF and meshes) is based on the Elephant Robotics myCobot 280.
 | `pnp_cobot_system_tests` | Arm and gripper test scripts |
 | `pnp_cobot_ros2` | Metapackage |
 
-## Requirements
-- Ubuntu 22.04 (Jammy)
-- ROS 2 Humble (apt binaries)
-- Gazebo Fortress (`ign gazebo`)
-
-Install the dependencies from apt:
+## Setup
+Requires Ubuntu 22.04, ROS 2 Humble and Gazebo Fortress. Install the dependencies:
 
 ```bash
 sudo apt install \
@@ -59,62 +31,59 @@ sudo apt install \
   ros-humble-xacro ros-humble-joint-state-publisher-gui ros-humble-urdf-tutorial
 ```
 
-## Build
+Build:
 ```bash
 cd ~/pick_n_place_cobot
-source /opt/ros/humble/setup.bash
 colcon build --symlink-install
 source install/setup.bash
 ```
 
-## Run
+## Run the simulation
 
-### Full pick and place demo
+**Full pick and place demo:**
 ```bash
 bash src/pnp_cobot_ros2/pnp_cobot_mtc_pick_place_demo/scripts/robot.sh
 ```
 
-This starts, in order:
-1. Gazebo with the pick and place world, the robot, the camera and the controllers
-2. `move_group` with RViz
-3. The perception server
-4. The MTC pick and place node
-
-The robot picks up the red cylinder and places it at `place_pose`. Planning takes about 15 s and
-execution about 10 s.
-
-### Simulation and controllers only
+**Simulation and controllers only**, with no MoveIt or perception:
 ```bash
 bash src/pnp_cobot_ros2/pnp_cobot_bringup/scripts/pnp_cobot_280_gazebo.sh
 ```
 
-### Configuration
-The pick and place node is configured in
-`pnp_cobot_mtc_pick_place_demo/config/mtc_node_params.yaml`:
+On Ctrl+C, these scripts force-kill every process whose command line matches `ros2`, `gz`,
+`rviz2`, `moveit` and similar. Close other ROS 2 or Gazebo work first.
 
-- `execute`: `true` runs the plan in Gazebo; `false` plans only and shows the solution in RViz.
-- `place_pose`: where the object is placed, in `base_link`.
-- `controller_names`: must match the controllers in
-  `pnp_cobot_moveit_config/config/pnp_cobot_280/ros2_controllers.yaml`.
+## What to expect
+`robot.sh` starts, in order: Gazebo, then `move_group` with RViz, then the perception server,
+then the MTC node. The full run takes about a minute.
 
-The perception pipeline (crop box, plane and cluster thresholds) is configured in
-`pnp_cobot_mtc_pick_place_demo/config/get_planning_scene_server.yaml`.
+![Gazebo scene at start](../../docs/media/gazebo_scene.png)
 
-## Notes
-- **Running the demo again:** after a successful run the cylinder sits at `place_pose`, so a second
-  run finds nothing valid to do and planning fails. Move the cylinder back first:
-  ```bash
-  ign service -s /world/default/set_pose \
-    --reqtype ignition.msgs.Pose --reptype ignition.msgs.Boolean --timeout 3000 \
-    --req 'name: "red_cylinder", position: {x: 0.22, y: 0.12, z: 0.175}, orientation: {w: 1.0}'
-  ```
-- **Stopping the scripts:** on Ctrl+C, the launch scripts force-kill every process whose command
-  line matches `ros2`, `gz`, `rviz2`, `moveit` and similar. Close any other ROS 2 or Gazebo work
-  before using them, or run the `ros2 launch` commands inside the scripts yourself.
-- **Harmless log messages:** `No 3D sensor plugin(s) defined for octomap updates`,
-  `Failed loading deceleration limits` (Pilz), `/recognize_objects not available` (RViz), and
-  `Computed path is not valid` lines while MTC rejects grasp candidates during planning.
-- The perception server writes debug `.pcd` files to `/tmp`.
+1. **Gazebo (~20 s):** the robot spawns at the table, and the controllers `joint_state_broadcaster`,
+   `arm_controller` and `gripper_action_controller` become active.
+2. **Perception:** the log reports a support plane and 7 collision objects (the table, 4 boxes
+   and 2 cylinders), and chooses `cylinder_1`, the red cylinder, as the target.
+3. **Planning (~15 s):** the MTC node logs `Task planning succeeded`. The solution appears in RViz
+   under **Motion Planning Tasks**.
+4. **Execution (~10 s):** the arm grasps the red cylinder at (0.22, 0.12), places it upright at
+   `place_pose` (-0.183, -0.14) within about 1 cm, and returns home. The node logs
+   `Task execution completed`.
 
-## License
-BSD-3-Clause. See the `LICENSE` file in each package.
+The following log messages are expected and harmless: `No 3D sensor plugin(s) defined for octomap updates`,
+`Failed loading deceleration limits`, `/recognize_objects not available`, and
+`Computed path is not valid` lines while MTC rejects grasp candidates.
+
+**Running the demo again:** the cylinder now sits at the place pose, so planning fails.
+Move it back first:
+```bash
+ign service -s /world/default/set_pose \
+  --reqtype ignition.msgs.Pose --reptype ignition.msgs.Boolean --timeout 3000 \
+  --req 'name: "red_cylinder", position: {x: 0.22, y: 0.12, z: 0.175}, orientation: {w: 1.0}'
+```
+
+## Configuration
+In `pnp_cobot_mtc_pick_place_demo/config/`:
+- `mtc_node_params.yaml`: `execute` (`false` plans only), `place_pose`, `controller_names`, and
+  the grasp and motion parameters.
+- `get_planning_scene_server.yaml`: the point cloud topic, crop box, and segmentation thresholds.
+
