@@ -12,7 +12,14 @@ trajectory execution, motion planning, and robot control specifically for the Pn
 
 import os
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, OpaqueFunction
+from launch.actions import (
+    DeclareLaunchArgument,
+    ExecuteProcess,
+    OpaqueFunction,
+    RegisterEventHandler,
+    TimerAction
+)
+from launch.event_handlers import OnProcessExit
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
@@ -55,6 +62,32 @@ def generate_launch_description():
         default_value="mtc_node",
         description="The MoveIt Task Constructor node responsible for pick and place",
         choices=["mtc_node"])
+
+    # Object reset arguments: put the target back at its start pose before each run, so the
+    # demo can be launched again without restarting Gazebo
+    declare_reset_object_cmd = DeclareLaunchArgument(
+        name='reset_object',
+        default_value='true',
+        description='Move the target object back to its start pose in Gazebo before planning')
+
+    declare_world_name_cmd = DeclareLaunchArgument(
+        name='world_name',
+        default_value='default',
+        description='Name of the Gazebo world (the <world name> in the .world file)')
+
+    declare_object_model_cmd = DeclareLaunchArgument(
+        name='object_model',
+        default_value='red_cylinder',
+        description='Gazebo model name of the object to reset')
+
+    declare_object_x_cmd = DeclareLaunchArgument(
+        name='object_x', default_value='0.22', description='Object start x, meters')
+
+    declare_object_y_cmd = DeclareLaunchArgument(
+        name='object_y', default_value='0.12', description='Object start y, meters')
+
+    declare_object_z_cmd = DeclareLaunchArgument(
+        name='object_z', default_value='0.175', description='Object start z, meters')
 
     def configure_setup(context):
         """Configure MoveIt and create nodes with proper string conversions."""
@@ -113,7 +146,30 @@ def generate_launch_description():
             ],
         )
 
-        return [mtc_demo_node]
+        if LaunchConfiguration('reset_object').perform(context).lower() != 'true':
+            return [mtc_demo_node]
+
+        # Teleport the object back to its start pose (upright, at rest)
+        pose_req = 'name: "{}", position: {{x: {}, y: {}, z: {}}}, orientation: {{w: 1.0}}'.format(
+            *[LaunchConfiguration(arg).perform(context)
+              for arg in ('object_model', 'object_x', 'object_y', 'object_z')])
+        reset_object_cmd = ExecuteProcess(
+            cmd=['ign', 'service',
+                 '-s', f"/world/{LaunchConfiguration('world_name').perform(context)}/set_pose",
+                 '--reqtype', 'ignition.msgs.Pose',
+                 '--reptype', 'ignition.msgs.Boolean',
+                 '--timeout', '3000',
+                 '--req', pose_req],
+            output='screen')
+
+        # Start the MTC node once the reset is done, after a short wait so the perception
+        # server has received a point cloud showing the object back at its start pose
+        start_mtc_after_reset_cmd = RegisterEventHandler(
+            event_handler=OnProcessExit(
+                target_action=reset_object_cmd,
+                on_exit=[TimerAction(period=2.0, actions=[mtc_demo_node])]))
+
+        return [reset_object_cmd, start_mtc_after_reset_cmd]
 
     # Create the launch description
     ld = LaunchDescription()
@@ -122,6 +178,12 @@ def generate_launch_description():
     ld.add_action(declare_robot_name_cmd)
     ld.add_action(declare_use_sim_time_cmd)
     ld.add_action(declare_exe_cmd)
+    ld.add_action(declare_reset_object_cmd)
+    ld.add_action(declare_world_name_cmd)
+    ld.add_action(declare_object_model_cmd)
+    ld.add_action(declare_object_x_cmd)
+    ld.add_action(declare_object_y_cmd)
+    ld.add_action(declare_object_z_cmd)
 
     # Add the setup and node creation
     ld.add_action(OpaqueFunction(function=configure_setup))

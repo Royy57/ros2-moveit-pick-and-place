@@ -73,13 +73,14 @@ The following log messages are expected and harmless: `No 3D sensor plugin(s) de
 `Failed loading deceleration limits`, `/recognize_objects not available`, and
 `Computed path is not valid` lines while MTC rejects grasp candidates.
 
-**Running the demo again:** the cylinder now sits at the place pose, so planning fails.
-Move it back first:
+**Running the demo again:** with Gazebo, `move_group` and the perception server still running,
+start only the task again:
 ```bash
-ign service -s /world/default/set_pose \
-  --reqtype ignition.msgs.Pose --reptype ignition.msgs.Boolean --timeout 3000 \
-  --req 'name: "red_cylinder", position: {x: 0.22, y: 0.12, z: 0.175}, orientation: {w: 1.0}'
+ros2 launch pnp_cobot_mtc_pick_place_demo pick_place_demo.launch.py
 ```
+The launch first moves the red cylinder back to its start pose (0.22, 0.12), waits 2 s for a fresh
+point cloud, then starts the MTC node. To disable this, pass `reset_object:=false`. For a
+different object or start pose, use `object_model`, `object_x`, `object_y` and `object_z`.
 
 ## Configuration
 In `pnp_cobot_mtc_pick_place_demo/config/`:
