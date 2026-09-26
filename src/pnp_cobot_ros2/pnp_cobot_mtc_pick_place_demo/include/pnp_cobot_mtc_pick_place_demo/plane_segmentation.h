@@ -26,9 +26,7 @@
 #include <pcl/common/common.h>
 #include <pcl/kdtree/kdtree.h>
 
-// Logging macros
-#define LOG_INFO(x) std::cout << "INFO: " << x << std::endl
-#define LOG_ERROR(x) std::cerr << "ERROR: " << x << std::endl
+#include "pnp_cobot_mtc_pick_place_demo/perception_logging.h"
 
 /**
  * @brief Segment the support plane and objects from a point cloud, and return plane coefficients.

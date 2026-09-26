@@ -52,12 +52,24 @@ def generate_launch_description():
 
     # Launch configuration variables
     use_sim_time = LaunchConfiguration('use_sim_time')
+    save_debug_clouds = LaunchConfiguration('save_debug_clouds')
+    log_level = LaunchConfiguration('log_level')
 
     # Declare the launch arguments
     declare_use_sim_time_cmd = DeclareLaunchArgument(
         name='use_sim_time',
         default_value='true',
         description='Use simulation (Gazebo) clock if true')
+
+    declare_save_debug_clouds_cmd = DeclareLaunchArgument(
+        name='save_debug_clouds',
+        default_value='false',
+        description='Save the intermediate point clouds of each request as PCD files in /tmp')
+
+    declare_log_level_cmd = DeclareLaunchArgument(
+        name='log_level',
+        default_value='info',
+        description='Log level of the perception server (debug shows every processing step)')
 
     # Start the GetPlanningSceneServer node
     start_get_planning_scene_server_cmd = Node(
@@ -66,8 +78,10 @@ def generate_launch_description():
         output="screen",
         parameters=[
             get_planning_scene_server_file_path,
-            {'use_sim_time': use_sim_time}
+            {'use_sim_time': use_sim_time,
+             'save_debug_clouds': save_debug_clouds}
         ],
+        arguments=['--ros-args', '--log-level', ['get_planning_scene_server:=', log_level]],
     )
 
     # Create the launch description and populate
@@ -75,6 +89,8 @@ def generate_launch_description():
 
     # Declare the launch options
     ld.add_action(declare_use_sim_time_cmd)
+    ld.add_action(declare_save_debug_clouds_cmd)
+    ld.add_action(declare_log_level_cmd)
 
     # Add any actions
     ld.add_action(start_get_planning_scene_server_cmd)

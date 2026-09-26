@@ -141,6 +141,7 @@ class GetPlanningSceneServer : public rclcpp::Node {
   double shape_fitting_normal_search_radius;
 
   // For output pcd (point cloud) files
+  bool save_debug_clouds;
   std::string output_directory;
   std::string debug_pcd_filename;
 
@@ -246,8 +247,9 @@ class GetPlanningSceneServer : public rclcpp::Node {
     declare_parameter("shape_fitting_normal_distance_weight", 0.1, "Normal distance weight for cylinder fitting");
     declare_parameter("shape_fitting_normal_search_radius", 0.05, "Search radius for normal estimation in shape fitting (in meters)");
 
-    // Output directory for point clouds. Useful for debugging
-    // ros2 run pcl_ros pcd_to_pointcloud --ros-args -p file_name:=/home/ubuntu/Downloads/my_debug_cloud.pcd -p frame_id:=base_link -p interval:=1.0
+    // Intermediate point clouds saved for debugging; view one with
+    // ros2 launch pnp_cobot_bringup point_cloud.launch.py file_name:=/tmp/5_objects_cloud_debug_cloud.pcd
+    declare_parameter("save_debug_clouds", false, "Save the intermediate point clouds of each request as PCD files");
     declare_parameter("output_directory", "/tmp/", "Directory to save output PCD files");
     declare_parameter("debug_pcd_filename", "debug_cloud.pcd", "Filename for debug PCD output");
 
@@ -330,6 +332,7 @@ class GetPlanningSceneServer : public rclcpp::Node {
     shape_fitting_normal_search_radius = this->get_parameter("shape_fitting_normal_search_radius").as_double();
 
     // Output directory for point cloud files
+    save_debug_clouds = this->get_parameter("save_debug_clouds").as_bool();
     output_directory = this->get_parameter("output_directory").as_string();
     debug_pcd_filename = this->get_parameter("debug_pcd_filename").as_string();
   }
@@ -379,11 +382,11 @@ class GetPlanningSceneServer : public rclcpp::Node {
   sensor_msgs::msg::PointCloud2::SharedPtr transformPointCloud(
       const sensor_msgs::msg::PointCloud2::SharedPtr& cloud_msg,
       const std::string& target_frame) {
-    RCLCPP_INFO(this->get_logger(), "Transforming point cloud from %s to %s",
+    RCLCPP_DEBUG(this->get_logger(), "Transforming point cloud from %s to %s",
       cloud_msg->header.frame_id.c_str(), target_frame.c_str());
 
     if (cloud_msg->header.frame_id == target_frame) {
-      RCLCPP_INFO(this->get_logger(), "Point cloud is already in the target frame");
+      RCLCPP_DEBUG(this->get_logger(), "Point cloud is already in the target frame");
     }
 
     geometry_msgs::msg::TransformStamped transform_stamped;
@@ -410,7 +413,7 @@ class GetPlanningSceneServer : public rclcpp::Node {
     pcl::transformPointCloud(*pcl_cloud, *transformed_cloud, transform_eigen);
 
     if (enable_cropping) {
-      RCLCPP_INFO(this->get_logger(), "Cropping is enabled. Applying crop box filter.");
+      RCLCPP_DEBUG(this->get_logger(), "Cropping is enabled. Applying crop box filter.");
 
       // Crop the transformed cloud
       pcl::CropBox<pcl::PointXYZRGB> crop_box;
@@ -423,9 +426,9 @@ class GetPlanningSceneServer : public rclcpp::Node {
       crop_box.filter(*cropped_cloud);
 
       transformed_cloud = cropped_cloud;
-      RCLCPP_INFO(this->get_logger(), "Point cloud cropped. New size: %zu points", transformed_cloud->size());
+      RCLCPP_DEBUG(this->get_logger(), "Point cloud cropped. New size: %zu points", transformed_cloud->size());
     } else {
-      RCLCPP_INFO(this->get_logger(), "Cropping is disabled. Using full transformed point cloud.");
+      RCLCPP_DEBUG(this->get_logger(), "Cropping is disabled. Using full transformed point cloud.");
     }
 
     // Convert back to ROS PointCloud2
@@ -436,14 +439,14 @@ class GetPlanningSceneServer : public rclcpp::Node {
     cloud_out->header.frame_id = target_frame;
     cloud_out->header.stamp = this->now();
 
-    RCLCPP_INFO(this->get_logger(), "Point cloud transformed successfully");
+    RCLCPP_DEBUG(this->get_logger(), "Point cloud transformed successfully");
     return cloud_out;
   }
 
   // Conversion from PointCloud2 to PCL point cloud
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr convertToPCL(
     const sensor_msgs::msg::PointCloud2::SharedPtr& cloud_msg) {
-    RCLCPP_INFO(this->get_logger(), "Converting PointCloud2 to PCL PointCloud");
+    RCLCPP_DEBUG(this->get_logger(), "Converting PointCloud2 to PCL PointCloud");
 
     auto pcl_cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZRGB>>();
 
@@ -461,7 +464,7 @@ class GetPlanningSceneServer : public rclcpp::Node {
             throw std::runtime_error("Resulting PCL cloud is empty after conversion");
         }
 
-        RCLCPP_INFO(this->get_logger(), "PointCloud2 successfully converted to PCL PointCloud with %zu points",
+        RCLCPP_DEBUG(this->get_logger(), "PointCloud2 successfully converted to PCL PointCloud with %zu points",
             pcl_cloud->size());
     } catch (const pcl::PCLException& e) {
         RCLCPP_ERROR(this->get_logger(), "PCL error in convertToPCL: %s", e.what());
@@ -481,7 +484,7 @@ class GetPlanningSceneServer : public rclcpp::Node {
       const pcl::PointCloud<pcl::PointXYZRGB>::Ptr& plane_cloud,
       pcl::ModelCoefficients::Ptr plane_coefficients,
       const std::string& frame_id) {
-    RCLCPP_INFO(this->get_logger(), "Creating support surface object");
+    RCLCPP_DEBUG(this->get_logger(), "Creating support surface object");
 
     moveit_msgs::msg::CollisionObject support_surface;
 
@@ -546,9 +549,9 @@ class GetPlanningSceneServer : public rclcpp::Node {
       box_pose.orientation.z = rotation.z();
       box_pose.orientation.w = rotation.w();
 
-      RCLCPP_INFO(this->get_logger(), "Support surface box dimensions: [%.4f, %.4f, %.4f]",
+      RCLCPP_DEBUG(this->get_logger(), "Support surface box dimensions: [%.4f, %.4f, %.4f]",
         box_primitive.dimensions[0], box_primitive.dimensions[1], box_primitive.dimensions[2]);
-      RCLCPP_INFO(this->get_logger(), "Support surface orientation: [%.4f, %.4f, %.4f, %.4f]",
+      RCLCPP_DEBUG(this->get_logger(), "Support surface orientation: [%.4f, %.4f, %.4f, %.4f]",
         box_pose.orientation.x, box_pose.orientation.y,
         box_pose.orientation.z, box_pose.orientation.w);
 
@@ -560,12 +563,12 @@ class GetPlanningSceneServer : public rclcpp::Node {
       support_surface.primitive_poses.push_back(box_pose);
       support_surface.operation = moveit_msgs::msg::CollisionObject::ADD;
 
-      RCLCPP_INFO(this->get_logger(), "Support surface object created successfully as a box");
-      RCLCPP_INFO(this->get_logger(), "Support surface normal: [%.4f, %.4f, %.4f]",
+      RCLCPP_DEBUG(this->get_logger(), "Support surface object created successfully as a box");
+      RCLCPP_DEBUG(this->get_logger(), "Support surface normal: [%.4f, %.4f, %.4f]",
         normal.x(), normal.y(), normal.z());
-      RCLCPP_INFO(this->get_logger(), "Support surface position: [%.4f, %.4f, %.4f]",
+      RCLCPP_DEBUG(this->get_logger(), "Support surface position: [%.4f, %.4f, %.4f]",
         box_pose.position.x, box_pose.position.y, box_pose.position.z);
-      RCLCPP_INFO(this->get_logger(), "Support surface orientation: [%.4f, %.4f, %.4f, %.4f]",
+      RCLCPP_DEBUG(this->get_logger(), "Support surface orientation: [%.4f, %.4f, %.4f, %.4f]",
         box_pose.orientation.x, box_pose.orientation.y,
         box_pose.orientation.z, box_pose.orientation.w);
     } catch (const std::exception& e) {
@@ -580,7 +583,7 @@ class GetPlanningSceneServer : public rclcpp::Node {
       const std::shared_ptr<pcl::PointCloud<pcl::PointXYZRGB>>& cluster,
       const std::string& frame_id,
       int index) {
-    RCLCPP_INFO(this->get_logger(), "Fitting shape to cluster %d", index);
+    RCLCPP_DEBUG(this->get_logger(), "Fitting shape to cluster %d", index);
 
     moveit_msgs::msg::CollisionObject collision_object;
     collision_object.header.frame_id = frame_id;
@@ -723,7 +726,7 @@ class GetPlanningSceneServer : public rclcpp::Node {
     collision_object.primitive_poses.push_back(pose);
     collision_object.operation = moveit_msgs::msg::CollisionObject::ADD;
 
-    RCLCPP_INFO(this->get_logger(), "Fitted %s to cluster %d with score %.2f",
+    RCLCPP_DEBUG(this->get_logger(), "Fitted %s to cluster %d with score %.2f",
                 best_fit.shape_type.c_str(), index, best_score);
 
     return collision_object;
@@ -804,7 +807,7 @@ class GetPlanningSceneServer : public rclcpp::Node {
   moveit_msgs::msg::PlanningSceneWorld assemblePlanningSceneWorld(
     const std::vector<moveit_msgs::msg::CollisionObject>& collision_objects) {
 
-    RCLCPP_INFO(this->get_logger(), "Assembling PlanningSceneWorld");
+    RCLCPP_DEBUG(this->get_logger(), "Assembling PlanningSceneWorld");
 
     moveit_msgs::msg::PlanningSceneWorld planning_scene_world;
 
@@ -819,7 +822,7 @@ class GetPlanningSceneServer : public rclcpp::Node {
       }
     }
 
-    RCLCPP_INFO(this->get_logger(),
+    RCLCPP_DEBUG(this->get_logger(),
                 "Assembled PlanningSceneWorld successfully with %zu collision objects",
                 planning_scene_world.collision_objects.size());
 
@@ -828,6 +831,9 @@ class GetPlanningSceneServer : public rclcpp::Node {
 
   // Used for debugging to see the point cloud at interim steps
   void savePointCloudToPCD(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr& cloud, const std::string& filename) {
+    if (!save_debug_clouds) {
+      return;
+    }
     std::string full_path = output_directory + filename;
     if (pcl::io::savePCDFileBinary(full_path, *cloud) == -1)
     {
@@ -835,7 +841,7 @@ class GetPlanningSceneServer : public rclcpp::Node {
     }
     else
     {
-      RCLCPP_INFO(this->get_logger(), "Saved %s with %zu points.", full_path.c_str(), cloud->size());
+      RCLCPP_DEBUG(this->get_logger(), "Saved %s with %zu points.", full_path.c_str(), cloud->size());
     }
   }
 
@@ -854,6 +860,13 @@ class GetPlanningSceneServer : public rclcpp::Node {
      *                                                  *
      ***************************************************/
     response->success = false;
+
+    std::string requested_dims;
+    for (double d : request->target_dimensions) {
+      requested_dims += (requested_dims.empty() ? "" : ", ") + std::to_string(d);
+    }
+    RCLCPP_INFO(this->get_logger(), "Request: find a %s with dimensions [%s]",
+      request->target_shape.c_str(), requested_dims.c_str());
 
     /****************************************************
      *                                                  *
@@ -943,12 +956,12 @@ class GetPlanningSceneServer : public rclcpp::Node {
       return;
     }
 
-    RCLCPP_INFO(this->get_logger(), "Plane and object segmentation successful");
-    RCLCPP_INFO(this->get_logger(), "Support plane cloud size: %zu", support_plane_cloud->size());
-    RCLCPP_INFO(this->get_logger(), "Plane coefficients: [%.3f, %.3f, %.3f, %.3f]",
+    RCLCPP_DEBUG(this->get_logger(), "Plane and object segmentation successful");
+    RCLCPP_DEBUG(this->get_logger(), "Support plane cloud size: %zu", support_plane_cloud->size());
+    RCLCPP_DEBUG(this->get_logger(), "Plane coefficients: [%.3f, %.3f, %.3f, %.3f]",
       plane_coefficients->values[0], plane_coefficients->values[1],
       plane_coefficients->values[2], plane_coefficients->values[3]);
-    RCLCPP_INFO(this->get_logger(), "Objects cloud size: %zu", objects_cloud->size());
+    RCLCPP_DEBUG(this->get_logger(), "Objects cloud size: %zu", objects_cloud->size());
 
     // For debugging
     savePointCloudToPCD(support_plane_cloud, "5_support_plane_" + debug_pcd_filename);
@@ -970,7 +983,7 @@ class GetPlanningSceneServer : public rclcpp::Node {
     if (support_surface.id.empty()) {
       RCLCPP_WARN(this->get_logger(), "Support surface collision object creation failed or resulted in an invalid object");
     } else {
-      RCLCPP_INFO(this->get_logger(), "Adding support surface collision object to the planning scene");
+      RCLCPP_DEBUG(this->get_logger(), "Adding support surface collision object to the planning scene");
       // Add the support surface to the planning scene
       response->scene_world.collision_objects.push_back(support_surface);
       // Set the support_surface_id in the response
@@ -997,7 +1010,7 @@ class GetPlanningSceneServer : public rclcpp::Node {
       return;
     }
 
-    RCLCPP_INFO(this->get_logger(), "Successfully estimated normals, curvature, and RSD for %zu points",
+    RCLCPP_DEBUG(this->get_logger(), "Successfully estimated normals, curvature, and RSD for %zu points",
       cloud_with_features->size());
 
     /***********************************************************************************
@@ -1020,7 +1033,7 @@ class GetPlanningSceneServer : public rclcpp::Node {
       return;
     }
 
-    RCLCPP_INFO(this->get_logger(), "Node '%s' successfully extracted %zu clusters from the point cloud", this->get_name(), clusters.size());
+    RCLCPP_DEBUG(this->get_logger(), "Node '%s' successfully extracted %zu clusters from the point cloud", this->get_name(), clusters.size());
 
     /***********************************************************************************
      *                                                                                 *
@@ -1052,7 +1065,7 @@ class GetPlanningSceneServer : public rclcpp::Node {
       line_theta_threshold
     );
 
-    RCLCPP_INFO(this->get_logger(), "Segmented %zu objects from the point cloud clusters", segmented_objects.size());
+    RCLCPP_DEBUG(this->get_logger(), "Segmented %zu objects from the point cloud clusters", segmented_objects.size());
 
     // Add segmented objects to the planning scene
     for (const auto& object : segmented_objects) {
@@ -1108,70 +1121,20 @@ class GetPlanningSceneServer : public rclcpp::Node {
     response->rgb_image = *latest_rgb_image;
     response->target_object_id = target_object_id;
 
-    // Helpful logging
-    RCLCPP_INFO(this->get_logger(), " ");
-    RCLCPP_INFO(this->get_logger(), "Success: %s", response->success ? "true" : "false");
-    RCLCPP_INFO(this->get_logger(), "Target object ID: %s", response->target_object_id.c_str());
-    RCLCPP_INFO(this->get_logger(), "Support surface ID: %s", response->support_surface_id.c_str());
-
-    // Point cloud information
-    RCLCPP_INFO(this->get_logger(), " ");
-    RCLCPP_INFO(this->get_logger(), "Full cloud frame ID: %s", response->full_cloud.header.frame_id.c_str());
-    RCLCPP_INFO(this->get_logger(), "Full cloud size: %d x %d",
-      response->full_cloud.width, response->full_cloud.height);
-
-    // RGB image information
-    RCLCPP_INFO(this->get_logger(), " ");
-    RCLCPP_INFO(this->get_logger(), "RGB image frame ID: %s", response->rgb_image.header.frame_id.c_str());
-    RCLCPP_INFO(this->get_logger(), "RGB image size: %d x %d",
-      response->rgb_image.width, response->rgb_image.height);
-
-    // Collision objects information
-    RCLCPP_INFO(this->get_logger(), " ");
-    RCLCPP_INFO(this->get_logger(), "Number of collision objects: %zu",
-      response->scene_world.collision_objects.size());
+    // Details of every collision object, for debugging
     for (const auto& obj : response->scene_world.collision_objects) {
-      if (!obj.primitives.empty()) {
-        const auto& primitive = obj.primitives[0];
-        const auto& pose = obj.primitive_poses[0];
-        std::string type_str;
-        std::string dimensions_str;
-
-        switch(primitive.type) {
-          case shape_msgs::msg::SolidPrimitive::BOX:
-            type_str = "BOX";
-            dimensions_str = "x=" + std::to_string(primitive.dimensions[0]) + ", " +
-                             "y=" + std::to_string(primitive.dimensions[1]) + ", " +
-                             "z=" + std::to_string(primitive.dimensions[2]);
-            break;
-          case shape_msgs::msg::SolidPrimitive::CYLINDER:
-            type_str = "CYLINDER";
-            dimensions_str = "height=" + std::to_string(primitive.dimensions[shape_msgs::msg::SolidPrimitive::CYLINDER_HEIGHT]) + ", " +
-                             "radius=" + std::to_string(primitive.dimensions[shape_msgs::msg::SolidPrimitive::CYLINDER_RADIUS]);
-            break;
-          default:
-            continue;  // Skip other primitive types
-        }
-
-        RCLCPP_INFO(this->get_logger(), " ");
-        RCLCPP_INFO(this->get_logger(), "Collision Object: ID=%s, Frame=%s, Type=%s",
-          obj.id.c_str(), obj.header.frame_id.c_str(), type_str.c_str());
-        RCLCPP_INFO(this->get_logger(), "  Position: x=%.4f, y=%.4f, z=%.4f (meters)",
-          pose.position.x, pose.position.y, pose.position.z);
-        RCLCPP_INFO(this->get_logger(), "  Orientation: x=%.4f, y=%.4f, z=%.4f, w=%.4f",
-          pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w);
-        RCLCPP_INFO(this->get_logger(), "  Dimensions: %s", dimensions_str.c_str());
-      } else {
-        RCLCPP_INFO(this->get_logger(), " ");
-        RCLCPP_WARN(this->get_logger(), "Collision Object: ID=%s has no primitives",
-          obj.id.c_str());
+      if (obj.primitives.empty() || obj.primitive_poses.empty()) {
+        RCLCPP_WARN(this->get_logger(), "Collision Object: ID=%s has no primitives", obj.id.c_str());
+        continue;
       }
+      const auto& pose = obj.primitive_poses[0].position;
+      std::string dims;
+      for (double d : obj.primitives[0].dimensions) {
+        dims += (dims.empty() ? "" : ", ") + std::to_string(d);
+      }
+      RCLCPP_DEBUG(this->get_logger(), "  %s in %s at (%.3f, %.3f, %.3f), dimensions [%s]",
+        obj.id.c_str(), obj.header.frame_id.c_str(), pose.x, pose.y, pose.z, dims.c_str());
     }
-
-    // Additional processing information
-    RCLCPP_INFO(this->get_logger(), " ");
-    RCLCPP_INFO(this->get_logger(), "Original point cloud frame: %s", latest_point_cloud->header.frame_id.c_str());
-    RCLCPP_INFO(this->get_logger(), "Target frame used for processing: %s", target_frame.c_str());
 
     // Check if all critical steps were successful
     if (!response->scene_world.collision_objects.empty() &&
@@ -1180,10 +1143,16 @@ class GetPlanningSceneServer : public rclcpp::Node {
         !response->target_object_id.empty() &&
         !response->support_surface_id.empty()) {
       response->success = true;
-      RCLCPP_INFO(this->get_logger(), "===== Service response filled successfully ===== ");
+      std::string ids;
+      for (const auto& obj : response->scene_world.collision_objects) {
+        ids += (ids.empty() ? "" : ", ") + obj.id;
+      }
+      RCLCPP_INFO(this->get_logger(), "Found %zu collision objects [%s]; target '%s' on '%s'",
+        response->scene_world.collision_objects.size(), ids.c_str(),
+        response->target_object_id.c_str(), response->support_surface_id.c_str());
     } else {
       response->success = false;
-      RCLCPP_WARN(this->get_logger(), "===== Service response incomplete or invalid. Here is an explanation: =====");
+      RCLCPP_WARN(this->get_logger(), "Service response incomplete or invalid:");
       if (response->scene_world.collision_objects.empty()) {
         RCLCPP_WARN(this->get_logger(), "  No collision objects in the scene");
       }
@@ -1200,8 +1169,6 @@ class GetPlanningSceneServer : public rclcpp::Node {
         RCLCPP_WARN(this->get_logger(), "  The support surface ID is empty");
       }
     }
-    RCLCPP_INFO(this->get_logger(), " ");
-    RCLCPP_INFO(this->get_logger(), "Service response logging completed!");
   }
 };
 
