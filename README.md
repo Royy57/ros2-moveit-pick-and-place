@@ -59,7 +59,7 @@ sudo apt install git-lfs          # meshes and images are stored with Git LFS
 git clone https://github.com/Royy57/ros2-moveit-pick-and-place.git ~/ros2-moveit-pick-and-place
 cd ~/ros2-moveit-pick-and-place
 colcon build --symlink-install && source install/setup.bash
-bash src/pnp_cobot_ros2/pnp_cobot_mtc_pick_place_demo/scripts/robot.sh
+ros2 launch pnp_cobot_bringup pick_and_place.launch.py
 ```
 
 Dependencies, the package overview, run options and what to expect are in

@@ -13,11 +13,6 @@
 
 #include "pnp_cobot_mtc_pick_place_demo/normals_curvature_and_rsd_estimation.h"
 
-// Define a logging function
-void LOG_INFO(const std::string& msg) {
-  std::cout << "[INFO] " << msg << std::endl;
-}
-
 pcl::PointCloud<PointXYZRGBNormalRSD>::Ptr
 estimateNormalsCurvatureAndRSD(
     const pcl::PointCloud<pcl::PointXYZRGB>::Ptr& input_cloud,

@@ -94,6 +94,8 @@ add_custom_library(get_planning_scene_client)
 add_custom_library(normals_curvature_and_rsd_estimation ${PCL_LIBS})
 add_custom_library(object_segmentation ${PCL_LIBS})
 add_custom_library(plane_segmentation ${PCL_LIBRARIES})
+add_custom_library(pick_place_params)
+add_custom_library(pick_place_task pick_place_params)
 
 # Executables
 ## get_planning_scene_client_node
@@ -119,7 +121,7 @@ target_link_libraries(get_planning_scene_server
 ## mtc_node
 add_executable(mtc_node src/mtc_node.cpp)
 ament_target_dependencies(mtc_node ${dependencies})
-target_link_libraries(mtc_node get_planning_scene_client)
+target_link_libraries(mtc_node get_planning_scene_client pick_place_params pick_place_task)
 
 # Installation
 set(EXECUTABLES
@@ -133,6 +135,8 @@ set(LIBRARIES
   get_planning_scene_client
   normals_curvature_and_rsd_estimation
   object_segmentation
+  pick_place_params
+  pick_place_task
   plane_segmentation
 )
 
@@ -149,7 +153,7 @@ install(TARGETS ${LIBRARIES}
 )
 
 install(DIRECTORY
-  config include/ launch rviz scripts
+  config include/ launch rviz
   DESTINATION share/${PROJECT_NAME}
 )
 

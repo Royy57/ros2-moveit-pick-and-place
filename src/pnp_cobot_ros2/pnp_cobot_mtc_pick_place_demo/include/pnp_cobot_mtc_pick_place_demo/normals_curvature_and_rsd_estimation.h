@@ -26,6 +26,7 @@
  */
 
 // PCL library includes
+#include "pnp_cobot_mtc_pick_place_demo/perception_logging.h"
 #include <pcl/point_types.h>              // For basic point types
 #include <pcl/point_cloud.h>              // For point cloud data structures
 #include <pcl/search/kdtree.h>            // For K-d tree searches
@@ -76,13 +77,6 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(PointXYZRGBNormalRSD,
 PCL_INSTANTIATE_PRODUCT(KdTree, (pcl::PointXYZRGBNormalRSD))
 PCL_INSTANTIATE_PRODUCT(Search, (pcl::PointXYZRGBNormalRSD))
 PCL_INSTANTIATE_PRODUCT(RegionGrowing, ((pcl::PointXYZRGBNormalRSD))(pcl::Normal))
-
-/**
- * @brief Log information to console.
- *
- * @param msg The message to log.
- */
-void LOG_INFO(const std::string& msg);
 
 /**
  * @brief Estimate normal vectors, curvature values, and RSD values for each point in the point cloud.

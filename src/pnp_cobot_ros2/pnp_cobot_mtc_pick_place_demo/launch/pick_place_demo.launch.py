@@ -40,7 +40,6 @@ def generate_launch_description():
 
     # Launch configuration variables
     use_sim_time = LaunchConfiguration('use_sim_time')
-    exe = LaunchConfiguration('exe')
 
     # Get the package share directory
     pkg_share_moveit_config_temp = FindPackageShare(package=package_name_moveit_config)
@@ -57,12 +56,6 @@ def generate_launch_description():
         name='use_sim_time',
         default_value='true',
         description='Use simulation (Gazebo) clock if true')
-
-    declare_exe_cmd = DeclareLaunchArgument(
-        name="exe",
-        default_value="mtc_node",
-        description="The MoveIt Task Constructor node responsible for pick and place",
-        choices=["mtc_node"])
 
     # Object reset arguments: put the target back at its start pose before each run, so the
     # demo can be launched again without restarting Gazebo
@@ -137,11 +130,12 @@ def generate_launch_description():
         # Create MTC demo node
         mtc_demo_node = Node(
             package="pnp_cobot_mtc_pick_place_demo",
-            executable=exe,
+            executable="mtc_node",
             output="screen",
             parameters=[
                 moveit_config.to_dict(),
-                {'use_sim_time': use_sim_time},
+                # Read now: the node may start after this launch file's scope has ended
+                {'use_sim_time': use_sim_time.perform(context) == 'true'},
                 {'start_state': {'content': initial_positions_file_path}},
                 mtc_node_params_file_path,
             ],
@@ -178,7 +172,6 @@ def generate_launch_description():
     # Add the launch arguments
     ld.add_action(declare_robot_name_cmd)
     ld.add_action(declare_use_sim_time_cmd)
-    ld.add_action(declare_exe_cmd)
     ld.add_action(declare_reset_object_cmd)
     ld.add_action(declare_world_name_cmd)
     ld.add_action(declare_object_model_cmd)
