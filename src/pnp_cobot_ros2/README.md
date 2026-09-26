@@ -12,7 +12,7 @@ project overview, see the [main README](../../README.md).
 | `pnp_cobot_mtc_demos` | Smaller standalone MTC examples |
 | `pnp_cobot_moveit_demos` | MoveIt 2 motion planning examples |
 | `pnp_cobot_interfaces` | Custom services and messages |
-| `pnp_cobot_bringup` | Convenience launch scripts |
+| `pnp_cobot_bringup` | Entry-point launch files that start the whole system in order |
 | `pnp_cobot_system_tests` | Arm and gripper test scripts |
 | `pnp_cobot_ros2` | Metapackage |
 
@@ -37,25 +37,29 @@ cd ~/ros2-moveit-pick-and-place   # the cloned repo is the colcon workspace
 colcon build --symlink-install
 source install/setup.bash
 ```
+The perception code uses PCL, which takes a lot of memory to compile. If the build fails with
+`Killed signal terminated program cc1plus`, limit parallel jobs:
+`MAKEFLAGS=-j2 colcon build --symlink-install --executor sequential`.
 
 ## Run the simulation
 
-**Full pick and place demo:**
-```bash
-bash src/pnp_cobot_ros2/pnp_cobot_mtc_pick_place_demo/scripts/robot.sh
-```
+Every entry point is a launch file in `pnp_cobot_bringup`:
 
-**Simulation and controllers only**, with no MoveIt or perception:
-```bash
-bash src/pnp_cobot_ros2/pnp_cobot_bringup/scripts/pnp_cobot_280_gazebo.sh
-```
+| Command | What it starts |
+| --- | --- |
+| `ros2 launch pnp_cobot_bringup pick_and_place.launch.py` | Full demo: simulation, MoveIt, perception and the MTC pick and place |
+| `ros2 launch pnp_cobot_bringup sim.launch.py` | Gazebo, the camera and the controllers, with RViz |
+| `ros2 launch pnp_cobot_bringup moveit.launch.py` | The simulation plus `move_group` and RViz with the MotionPlanning panel; add `rviz_view:=mtc` for the MoveIt Task Constructor panel instead |
+| `ros2 launch pnp_cobot_bringup mtc_demos.launch.py exe:=cartesian` | A standalone MTC example (`alternative_path_costs`, `cartesian`, `fallbacks_move_to`, `ik_clearance_cost`, `modular`) |
+| `ros2 launch pnp_cobot_bringup point_cloud.launch.py` | The simulation plus RViz replaying a perception cloud saved with `save_debug_clouds:=true` (`file_name:=...`) |
 
-On Ctrl+C, these scripts force-kill every process whose command line matches `ros2`, `gz`,
-`rviz2`, `moveit` and similar. Close other ROS 2 or Gazebo work first.
+Each stage waits until the previous one is ready (the controllers are active, then `move_group`
+can execute MTC solutions) instead of sleeping for a fixed time. Ctrl+C stops everything the
+launch started. Run `ros2 launch pnp_cobot_bringup <file> -s` to list a file's arguments.
 
 ## What to expect
-`robot.sh` starts, in order: Gazebo, then `move_group` with RViz, then the perception server,
-then the MTC node. The full run takes about a minute.
+`pick_and_place.launch.py` starts, in order: Gazebo, then `move_group` with RViz, then the
+perception server and the MTC node. The full run takes about 50 s.
 
 ![Gazebo scene at start](../../docs/media/gazebo_scene.png)
 
@@ -87,4 +91,11 @@ In `pnp_cobot_mtc_pick_place_demo/config/`:
 - `mtc_node_params.yaml`: `execute` (`false` plans only), `place_pose`, `controller_names`, and
   the grasp and motion parameters.
 - `get_planning_scene_server.yaml`: the point cloud topic, crop box, and segmentation thresholds.
+
+**Debugging perception:** by default the perception server logs one summary per request. Two
+arguments of `pick_and_place.launch.py` show more:
+- `perception_log_level:=debug` logs every processing step (filtering, plane fit, clusters, shape
+  fits, each collision object).
+- `save_debug_clouds:=true` saves the intermediate point clouds of each request to `/tmp`. View
+  one with `ros2 launch pnp_cobot_bringup point_cloud.launch.py`.
 

@@ -12,9 +12,14 @@ find_package(ament_cmake REQUIRED)
 # find_package(<dependency> REQUIRED)
 
 # Copy necessary files to designated locations in the project
-install (
-  DIRECTORY scripts
+install(
+  DIRECTORY launch
   DESTINATION share/${PROJECT_NAME}
+)
+
+install(
+  PROGRAMS scripts/wait_for_ready.py
+  DESTINATION lib/${PROJECT_NAME}
 )
 
 if(BUILD_TESTING)
