@@ -93,6 +93,9 @@ ARGUMENTS = [
     DeclareLaunchArgument('use_camera', default_value='false',
                           choices=['true', 'false'],
                           description='Whether to use the RGBD Gazebo plugin for point cloud'),
+    DeclareLaunchArgument('camera_mount', default_value='stand',
+                          choices=['stand', 'wrist'],
+                          description='Camera on a stand next to the robot, or on the wrist'),
     DeclareLaunchArgument('use_gazebo', default_value='false',
                           choices=['true', 'false'],
                           description='Whether to use Gazebo simulation'),
@@ -177,6 +180,7 @@ def generate_launch_description():
         'flange_link:=', LaunchConfiguration('flange_link'), ' ',
         'gripper_type:=', LaunchConfiguration('gripper_type'), ' ',
         'use_camera:=', LaunchConfiguration('use_camera'), ' ',
+        'camera_mount:=', LaunchConfiguration('camera_mount'), ' ',
         'use_gazebo:=', LaunchConfiguration('use_gazebo'), ' ',
         'use_gripper:=', LaunchConfiguration('use_gripper')
     ]), value_type=str)

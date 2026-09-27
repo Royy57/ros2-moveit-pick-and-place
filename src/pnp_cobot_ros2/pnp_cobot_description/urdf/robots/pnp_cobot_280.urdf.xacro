@@ -8,6 +8,7 @@
     <xacro:arg name="gripper_type" default="adaptive_gripper"/>
     <xacro:arg name="prefix" default=""/>
     <xacro:arg name="use_camera" default="false"/>
+    <xacro:arg name="camera_mount" default="stand"/>
     <xacro:arg name="use_gazebo" default="false"/>
     <xacro:arg name="use_gripper" default="true"/>
 
@@ -59,6 +60,31 @@
       flange_link="$(arg flange_link)"
       use_gazebo="$(arg use_gazebo)"/>
 
-    <xacro:include filename="$(find pnp_cobot_description)/urdf/sensors/intel_rgbd_cam_d435.urdf.xacro"/>
+    <!-- RGB-D camera: fixed on a stand next to the robot, or on the wrist (eye-in-hand) -->
+    <xacro:if value="$(arg use_camera)">
+        <xacro:include filename="$(find pnp_cobot_description)/urdf/sensors/intel_rgbd_cam_d435.urdf.xacro"/>
+        <xacro:property name="current_camera_mount" value="$(arg camera_mount)"/>
+
+        <xacro:if value="${current_camera_mount == 'stand'}">
+            <xacro:include filename="$(find pnp_cobot_description)/urdf/mech/camera_stand.urdf.xacro"/>
+            <xacro:camera_stand parent="$(arg prefix)$(arg base_link)">
+                <origin xyz="0.22 -0.30 0" rpy="0 0 0"/>
+            </xacro:camera_stand>
+            <xacro:intel_rgbd_cam_d435 name="camera_head" parent="torso_link"
+                                       use_gazebo="$(arg use_gazebo)">
+                <origin xyz="0 0.01 0.50" rpy="0 ${radians(25)} ${pi/2}"/>
+            </xacro:intel_rgbd_cam_d435>
+        </xacro:if>
+
+        <!-- gripper_base frame: +y towards the fingertips, x across the fingers. The camera sits
+             on the +z side of the gripper and looks along +y. Its depth range starts at 0.1 m
+             like a D435 at this resolution, so the fingertips (~6 cm ahead) are not in the cloud. -->
+        <xacro:if value="${current_camera_mount == 'wrist'}">
+            <xacro:intel_rgbd_cam_d435 name="camera_wrist" parent="$(arg prefix)gripper_base"
+                                       use_gazebo="$(arg use_gazebo)" near_clip="0.1">
+                <origin xyz="0 0 0.03" rpy="0 0 ${pi/2}"/>
+            </xacro:intel_rgbd_cam_d435>
+        </xacro:if>
+    </xacro:if>
 
 </robot>

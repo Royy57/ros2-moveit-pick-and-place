@@ -67,6 +67,7 @@ def generate_launch_description():
     robot_name = LaunchConfiguration('robot_name')
     use_rviz = LaunchConfiguration('use_rviz')
     use_camera = LaunchConfiguration('use_camera')
+    camera_mount = LaunchConfiguration('camera_mount')
     use_gazebo = LaunchConfiguration('use_gazebo')
     use_robot_state_pub = LaunchConfiguration('use_robot_state_pub')
     use_sim_time = LaunchConfiguration('use_sim_time')
@@ -112,6 +113,12 @@ def generate_launch_description():
         name='use_camera',
         default_value='false',
         description='Flag to enable the RGBD camera for Gazebo point cloud simulation')
+
+    declare_camera_mount_cmd = DeclareLaunchArgument(
+        name='camera_mount',
+        default_value='stand',
+        choices=['stand', 'wrist'],
+        description='Camera on a stand next to the robot, or on the wrist')
 
     declare_use_gazebo_cmd = DeclareLaunchArgument(
         name='use_gazebo',
@@ -172,6 +179,7 @@ def generate_launch_description():
         launch_arguments={
             'jsp_gui': jsp_gui,
             'use_camera': use_camera,
+            'camera_mount': camera_mount,
             'use_gazebo': use_gazebo,
             'use_rviz': use_rviz,
             'use_sim_time': use_sim_time
@@ -224,10 +232,14 @@ def generate_launch_description():
         arguments=[
             '/camera_head/depth_image',
             '/camera_head/image',
+            '/camera_wrist/depth_image',
+            '/camera_wrist/image',
         ],
         remappings=[
             ('/camera_head/depth_image', '/camera_head/depth/image_rect_raw'),
             ('/camera_head/image', '/camera_head/color/image_raw'),
+            ('/camera_wrist/depth_image', '/camera_wrist/depth/image_rect_raw'),
+            ('/camera_wrist/image', '/camera_wrist/color/image_raw'),
         ],
     )
 
@@ -256,6 +268,7 @@ def generate_launch_description():
     ld.add_action(declare_jsp_gui_cmd)
     ld.add_action(declare_load_controllers_cmd)
     ld.add_action(declare_use_camera_cmd)
+    ld.add_action(declare_camera_mount_cmd)
     ld.add_action(declare_use_gazebo_cmd)
     ld.add_action(declare_use_rviz_cmd)
     ld.add_action(declare_use_robot_state_pub_cmd)

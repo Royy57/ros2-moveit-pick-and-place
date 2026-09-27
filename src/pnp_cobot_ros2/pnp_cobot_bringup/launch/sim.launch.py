@@ -7,6 +7,7 @@ Once the controllers are active, the Gazebo camera is pointed at the workspace.
 Usage:
     ros2 launch pnp_cobot_bringup sim.launch.py
     ros2 launch pnp_cobot_bringup sim.launch.py use_rviz:=false world_file:=empty.world
+    ros2 launch pnp_cobot_bringup sim.launch.py camera_mount:=wrist
 
 :author: Souvik Roy <sroyy57@gmail.com>
 """
@@ -30,6 +31,8 @@ def generate_launch_description():
                               description='Show the robot model in RViz'),
         DeclareLaunchArgument('use_camera', default_value='true',
                               description='Simulate the RGB-D camera'),
+        DeclareLaunchArgument('camera_mount', default_value='stand', choices=['stand', 'wrist'],
+                              description='Camera on a stand next to the robot, or on the wrist'),
         DeclareLaunchArgument('x', default_value='0.0', description='Robot x position, meters'),
         DeclareLaunchArgument('y', default_value='0.0', description='Robot y position, meters'),
         DeclareLaunchArgument('z', default_value='0.0', description='Robot z position, meters'),
@@ -45,6 +48,7 @@ def generate_launch_description():
             'load_controllers': 'true',
             'world_file': arg('world_file'),
             'use_camera': arg('use_camera'),
+            'camera_mount': arg('camera_mount'),
             'use_rviz': arg('use_rviz'),
             'use_robot_state_pub': 'true',
             'use_sim_time': 'true',

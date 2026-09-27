@@ -14,6 +14,21 @@
   direction: GZ_TO_ROS
   lazy: true
   
+# Wrist camera (camera_mount:=wrist)
+- ros_topic_name: "camera_wrist/depth/camera_info"
+  gz_topic_name: "camera_wrist/camera_info"
+  ros_type_name: "sensor_msgs/msg/CameraInfo"
+  gz_type_name: "ignition.msgs.CameraInfo"
+  direction: GZ_TO_ROS
+  lazy: true
+
+- ros_topic_name: "camera_wrist/depth/color/points"
+  gz_topic_name: "camera_wrist/points"
+  ros_type_name: "sensor_msgs/msg/PointCloud2"
+  gz_type_name: "ignition.msgs.PointCloudPacked"
+  direction: GZ_TO_ROS
+  lazy: true
+
 # Clock configuration
 - ros_topic_name: "clock"
   gz_topic_name: "clock"
